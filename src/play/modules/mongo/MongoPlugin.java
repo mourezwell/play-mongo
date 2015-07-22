@@ -1,6 +1,6 @@
 package play.modules.mongo;
 
-import com.mongodb.MongoException;
+import com.mongodb.MongoSocketException;
 
 import org.bson.types.ObjectId;
 
@@ -37,8 +37,8 @@ public class MongoPlugin extends PlayPlugin {
 
     @Override
     public void onInvocationException(Throwable e) {
-        if (e instanceof MongoException.Network) {
-            Logger.error("MongoException.Network encountered. Trying to get new MongoDB connection ...");
+        if (e instanceof MongoSocketException) {
+            Logger.error("MongoSocketException encountered. Trying to get new MongoDB connection ...");
             MongoDB.reset();
         }
     }

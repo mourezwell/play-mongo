@@ -1,21 +1,9 @@
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.PersistenceUnit;
-
 import org.junit.Before;
 import org.junit.Test;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-
-import play.modules.mongo.MongoDB;
-import play.modules.mongo.MongoEntity;
 import play.test.UnitTest;
 
 import models.MongoTestEntity;

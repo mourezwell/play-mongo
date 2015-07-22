@@ -102,7 +102,6 @@ public class MongoCursor {
 	 * @param <T> - the specific MongoModel type
 	 * @return - one instance of a MongoModel
 	 */
-	@SuppressWarnings("unchecked")
 	public <T extends MongoModel> T first(){
 		List<T> limitedList = fetch(1,1);
 		if (!limitedList.isEmpty()) {
