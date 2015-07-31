@@ -28,6 +28,10 @@ public class MongoModel implements Model, Serializable {
         throw new UnsupportedOperationException("Please annotate your model with @MongoEntity annotation.");
     }
 
+    public static String getUnitName() {
+        throw new UnsupportedOperationException("Please annotate your model with @MongoEntity annotation.");
+    }
+
     public static long count() {
         throw new UnsupportedOperationException("Please annotate your model with @MongoEntity annotation.");
     }

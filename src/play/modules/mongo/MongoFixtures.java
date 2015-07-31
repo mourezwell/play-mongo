@@ -27,7 +27,8 @@ public class MongoFixtures extends Fixtures {
     private static void dropCollection(Class type) {
         try {
             String collectionName = (String) Java.invokeStatic(type, "getCollectionName");
-            MongoDB.deleteAll(collectionName);
+            String unitName = (String) Java.invokeStatic(type, "getUnitName");
+            MongoDB.deleteAll(unitName, collectionName);
         } catch (Exception e) {
             Logger.error("Unable to delete collection for class: %s", type.getSimpleName());
         }

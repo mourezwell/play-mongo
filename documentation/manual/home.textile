@@ -195,21 +195,25 @@ bc.. # ensure you set the necessary configuration parameters to match authentica
 mongo.username=test
 mongo.password=test123
 
-p. Now you can perform the following operations in your controllers.
+h3. Multiple Database or Instances
 
-bc.. //add a user - with read only access
-MongoDB.addUser("username","password", true);
+p. It is possible to use multiple mongo databases, as it now possible in Play framework 1.3. To to s, you can configure alternative database with following properties in your play configuration file
 
-// or write access
-MongoDB.addUser("username2","password2", false);
+bc.. # In your configuration file, you can use these properties to define new persistence unit
+mongo_<unit>.database=test
+mongo_<unit>.host=test
+mongo_<unit>.port=test
+mongo_<unit>.username=test
+mongo_<unit>.password=test
 
-// authenticate as a user
-boolean success = MongoDB.authenticate("username","password");
+p. In your entity class, you have to add the annotation @MongoUnit(<unit>), by default if the annotation is missing or with no value, it assumes that you're using default unit, as if there was only one (with mongo.* properties definitions) 
 
-// remove a user
-MongoDB.removeUser("username");
-
-p. Please note that readOnly restrictions will only apply on mongo versions 1.3.2+
+bc.. // Collection cars will be part of vehicles mongo persistence unit
+@MongoEntity("cars")
+@MongoUnit("vehicles")
+public class Car extends MongoModel {
+    ...
+}
 
 h2. <a>Test Application</a>
 
