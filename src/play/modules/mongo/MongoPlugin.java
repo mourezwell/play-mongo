@@ -85,10 +85,12 @@ public class MongoPlugin extends PlayPlugin {
 
         private Class<? extends Model> clazz;
         private String collectionName;
+        private String unitName;
 
         private MongoLoader(Class<? extends Model> clazz) {
             this.clazz = clazz;
             this.collectionName = getCollectionName();
+            this.unitName = getUnitName();
             m_.put(clazz, this);
         }
 
@@ -97,6 +99,14 @@ public class MongoPlugin extends PlayPlugin {
                 return (String) Java.invokeStatic(clazz, "getCollectionName");
             } catch (Exception e) {
                 throw new RuntimeException("Unable to get collection name for " + clazz, e);
+            }
+        }
+
+        private String getUnitName() {
+            try {
+                return (String) Java.invokeStatic(clazz, "getUnitName");
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to get unit name for " + clazz, e);
             }
         }
 
@@ -127,7 +137,7 @@ public class MongoPlugin extends PlayPlugin {
 
         @Override
         public Model findById(Object id) {
-            return MongoDB.findById(collectionName, clazz, (ObjectId) id);
+            return MongoDB.findById(unitName, collectionName, clazz, (ObjectId) id);
         }
 
         @Override
@@ -143,7 +153,7 @@ public class MongoPlugin extends PlayPlugin {
 
         @Override
         public void deleteAll() {
-            MongoDB.deleteAll(collectionName);
+            MongoDB.deleteAll(unitName, collectionName);
         }
 
         @Override

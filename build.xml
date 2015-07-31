@@ -35,6 +35,7 @@
             <manifest>
                 <section name="Play-module">
                     <attribute name="Specification-Title" value="play-mongo"/>
+                    <attribute name="Specification-Version" value="1.5"/>
                 </section>
             </manifest>
         </jar>

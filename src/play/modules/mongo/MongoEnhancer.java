@@ -24,7 +24,10 @@ public class MongoEnhancer extends Enhancer {
 	
 	public static final String ENTITY_ANNOTATION_NAME = "play.modules.mongo.MongoEntity";
 	public static final String ENTITY_ANNOTATION_VALUE = "value";
-	
+
+	public static final String UNIT_ANNOTATION_NAME = "play.modules.mongo.MongoUnit";
+	public static final String UNIT_ANNOTATION_VALUE = "value";
+
 	@Override
 	public void enhanceThisClass(ApplicationClass applicationClass) throws Exception {
 		
@@ -49,25 +52,32 @@ public class MongoEnhancer extends Enhancer {
     	// Don't need to fully qualify types when compiling methods below
         classPool.importPackage(PACKAGE_NAME);
 		
-		String entityName = ctClass.getName();
+		String className = ctClass.getName();
         
         // Set the default collection name
         String collectionName = "\"" + ctClass.getSimpleName().toLowerCase() + "\"";
-        
-        Logger.debug("using collectionName %s", collectionName);
+        String unitName = "\"" + MongoDB.DEFAULT + "\"";
         
         AnnotationsAttribute attr = getAnnotations(ctClass);
         Annotation annotation = attr.getAnnotation(ENTITY_ANNOTATION_NAME);
         if (annotation.getMemberValue(ENTITY_ANNOTATION_VALUE) != null){
         	collectionName = annotation.getMemberValue(ENTITY_ANNOTATION_VALUE).toString();
         }
+        Annotation annotationUnit = attr.getAnnotation(UNIT_ANNOTATION_NAME);
+        if (annotationUnit != null && annotationUnit.getMemberValue(UNIT_ANNOTATION_VALUE) != null){
+        	unitName = annotationUnit.getMemberValue(UNIT_ANNOTATION_VALUE).toString();
+        }
 
-        Logger.debug( this.getClass().getName() + "-->enhancing MongoEntity-->" + ctClass.getName() + "-->collection-->" + collectionName);
+        Logger.debug( this.getClass().getName() + "-->enhancing MongoEntity-->" + ctClass.getName()+ "-->unit-->" + unitName + "-->collection-->" + collectionName);
         
         // getCollectionName
         CtMethod getCollectionName = CtMethod.make("public static java.lang.String getCollectionName() { return " + collectionName + ";}", ctClass);
         ctClass.addMethod(getCollectionName);
-        
+
+        // getUnitName
+        CtMethod getUnitName = CtMethod.make("public static java.lang.String getUnitName() { return " + unitName + ";}", ctClass);
+        ctClass.addMethod(getUnitName);
+
         // create an _id field
         CtField idField = new CtField(classPool.get("org.bson.types.ObjectId"), "_id", ctClass);
         idField.setModifiers(Modifier.PRIVATE);
@@ -82,63 +92,63 @@ public class MongoEnhancer extends Enhancer {
         ctClass.addMethod(set_id);
         
         // count
-        CtMethod count = CtMethod.make("public static long count() { return MongoDB.count(getCollectionName());}", ctClass);
+        CtMethod count = CtMethod.make("public static long count() { return MongoDB.count(getUnitName(), getCollectionName());}", ctClass);
         ctClass.addMethod(count);
 
         // count2
-        CtMethod count2 = CtMethod.make("public static long count(java.lang.String query, java.lang.Object[] params) { return MongoDB.count(getCollectionName(), query, params); }", ctClass);
+        CtMethod count2 = CtMethod.make("public static long count(java.lang.String query, java.lang.Object[] params) { return MongoDB.count(getUnitName(), getCollectionName(), query, params); }", ctClass);
         ctClass.addMethod(count2);
 
         // count3
-        CtMethod count3 = CtMethod.make("public static long count(com.mongodb.DBObject queryObject) { return MongoDB.count(getCollectionName(), queryObject); }", ctClass);
+        CtMethod count3 = CtMethod.make("public static long count(com.mongodb.DBObject queryObject) { return MongoDB.count(getUnitName(), getCollectionName(), queryObject); }", ctClass);
         ctClass.addMethod(count3);
 
         // find        
-        CtMethod find = CtMethod.make("public static MongoCursor find(String query, Object[] params){ return MongoDB.find(getCollectionName(),query,params,"+entityName+".class); }", ctClass);
+        CtMethod find = CtMethod.make("public static MongoCursor find(String query, Object[] params){ return MongoDB.find(getUnitName(), getCollectionName(),query,params,"+className+".class); }", ctClass);
         ctClass.addMethod(find);
         
         // find2        
-        CtMethod find2 = CtMethod.make("public static MongoCursor find(){ return MongoDB.find(getCollectionName(),"+entityName+".class); }", ctClass);
+        CtMethod find2 = CtMethod.make("public static MongoCursor find(){ return MongoDB.find(getUnitName(), getCollectionName(),"+className+".class); }", ctClass);
         ctClass.addMethod(find2);
       
         // find3        
-        CtMethod find3 = CtMethod.make("public static MongoCursor find(com.mongodb.DBObject queryObject){ return MongoDB.find(getCollectionName(),queryObject,"+entityName+".class); }", ctClass);
+        CtMethod find3 = CtMethod.make("public static MongoCursor find(com.mongodb.DBObject queryObject){ return MongoDB.find(getUnitName(), getCollectionName(),queryObject,"+className+".class); }", ctClass);
         ctClass.addMethod(find3);
 
         // delete        
-        CtMethod delete = CtMethod.make("public void delete() { MongoDB.delete(getCollectionName(), this); }", ctClass);
+        CtMethod delete = CtMethod.make("public void delete() { MongoDB.delete(getUnitName(), getCollectionName(), this); }", ctClass);
         ctClass.addMethod(delete);
         
         // delete2        
-        CtMethod delete2 = CtMethod.make("public static long delete(String query, Object[] params) { return MongoDB.delete(getCollectionName(), query, params); }", ctClass);
+        CtMethod delete2 = CtMethod.make("public static long delete(String query, Object[] params) { return MongoDB.delete(getUnitName(), getCollectionName(), query, params); }", ctClass);
         ctClass.addMethod(delete2);
 
         // delete3        
-        CtMethod delete3 = CtMethod.make("public static long delete(com.mongodb.DBObject queryObject) { return MongoDB.delete(getCollectionName(), queryObject); }", ctClass);
+        CtMethod delete3 = CtMethod.make("public static long delete(com.mongodb.DBObject queryObject) { return MongoDB.delete(getUnitName(), getCollectionName(), queryObject); }", ctClass);
         ctClass.addMethod(delete3);
 
         // deleteAll        
-        CtMethod deleteAll = CtMethod.make("public static long deleteAll() { return MongoDB.deleteAll(getCollectionName()); }", ctClass);
+        CtMethod deleteAll = CtMethod.make("public static long deleteAll() { return MongoDB.deleteAll(getUnitName(), getCollectionName()); }", ctClass);
         ctClass.addMethod(deleteAll);
     
         // save     
-        CtMethod save = CtMethod.make("public MongoModel save() { return (MongoModel)MongoDB.save("+ entityName +".getCollectionName(), this); }", ctClass);
+        CtMethod save = CtMethod.make("public MongoModel save() { return (MongoModel)MongoDB.save(getUnitName(), getCollectionName(), this); }", ctClass);
         ctClass.addMethod(save);
         
         // index
-        CtMethod index = CtMethod.make("public static void index(String indexString) { MongoDB.index("+ entityName +".getCollectionName(), indexString); }", ctClass);
+        CtMethod index = CtMethod.make("public static void index(String indexString) { MongoDB.index(getUnitName(), getCollectionName(), indexString); }", ctClass);
         ctClass.addMethod(index);
         
         // dropIndex
-        CtMethod dropIndex = CtMethod.make("public static void dropIndex(String indexString) { MongoDB.dropIndex("+ entityName +".getCollectionName(), indexString); }", ctClass);
+        CtMethod dropIndex = CtMethod.make("public static void dropIndex(String indexString) { MongoDB.dropIndex(getUnitName(), getCollectionName(), indexString); }", ctClass);
         ctClass.addMethod(dropIndex);
         
         // dropIndexes
-        CtMethod dropIndexes = CtMethod.make("public static void dropIndexes() { MongoDB.dropIndexes("+ entityName +".getCollectionName()); }", ctClass);
+        CtMethod dropIndexes = CtMethod.make("public static void dropIndexes() { MongoDB.dropIndexes(getUnitName(), getCollectionName()); }", ctClass);
         ctClass.addMethod(dropIndexes);
         
         // getIndexes
-        CtMethod getIndexes = CtMethod.make("public static String[] getIndexes() { return MongoDB.getIndexes("+ entityName +".getCollectionName()); }", ctClass);
+        CtMethod getIndexes = CtMethod.make("public static String[] getIndexes() { return MongoDB.getIndexes(getUnitName(), getCollectionName()); }", ctClass);
         ctClass.addMethod(getIndexes);
         
         // Done.
