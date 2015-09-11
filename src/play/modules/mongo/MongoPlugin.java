@@ -1,13 +1,11 @@
 package play.modules.mongo;
 
-import com.mongodb.MongoSocketException;
-
 import org.bson.types.ObjectId;
 
-import play.Logger;
 import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.db.Model;
+import play.exceptions.DatabaseException;
 import play.utils.Java;
 
 import java.util.HashMap;
@@ -30,17 +28,13 @@ public class MongoPlugin extends PlayPlugin {
 	}
 
     @Override
-    public void onConfigurationRead() {
-        Logger.info("application configuration read, now configuring MongoDB connection ...");
-        MongoDB.reset();
-    }
-
-    @Override
-    public void onInvocationException(Throwable e) {
-        if (e instanceof MongoSocketException) {
-            Logger.error("MongoSocketException encountered. Trying to get new MongoDB connection ...");
-            MongoDB.reset();
-        }
+    public void onApplicationStart() {
+    	try {
+    		MongoDB.init();
+    	}
+    	catch (Exception e) {
+    		throw new DatabaseException("Unable to connect Mongo DB", e);
+    	}
     }
 
     /*

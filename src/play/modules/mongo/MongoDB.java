@@ -52,33 +52,19 @@ public class MongoDB {
      * @return - a reference to the Mongo database
      */
 	public static DB db(String pKey) {
-		if (sClients.isEmpty()) {
-			init();
-		}
 		if (sClients.get(pKey) != null) {
 			return sClients.get(pKey).db();
 		}
 		return null;
 	}
 
-    /**
-     * Refresh connection to MongoDB.
-     */
-    public static void reset() {
-    	for (MongoDBClient lClient : sClients.values()) {
-    		lClient.close();
-    	}
-    	sClients.clear();
-        init();
-    }
-
 	/**
 	 * Static initialiser.
 	 * 
-	 * @throws UnknownHostException
-	 * @throws MongoException
+	 * @throws UnknownHostException in case of bad configuration
+	 * @throws MongoException in case of mongo communication error
 	 */
-	public static void init() {
+	public static void init() throws MongoException, UnknownHostException {
 
 		for (Object lPropName : Play.configuration.keySet()) {
 			String lDBProp = (String)lPropName;

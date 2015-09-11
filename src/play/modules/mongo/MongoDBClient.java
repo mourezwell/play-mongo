@@ -23,7 +23,8 @@ public class MongoDBClient {
     private String password;
 
 	
-	public MongoDBClient(String pHost, Integer pPort, String pDBName, String pUserName, String pPass) {
+	public MongoDBClient(String pHost, Integer pPort, String pDBName, String pUserName, String pPass) 
+		throws MongoException, UnknownHostException {
 		
 		host = pHost;
 		port = pPort;
@@ -31,20 +32,16 @@ public class MongoDBClient {
 		username = pUserName;
 		password = pPass;
 		
-		try {
-			ServerAddress lSA = new ServerAddress(host, port);
-			List<MongoCredential> lCred = new ArrayList<MongoCredential>();
-			if (username != null && password != null) {
-				lCred.add(MongoCredential.createCredential(username, dbname, password.toCharArray()));
-			}
-			mongo = new MongoClient(lSA, lCred);
-			db = mongo.getDB(dbname);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (MongoException e) {
-			e.printStackTrace();
+		ServerAddress lSA = new ServerAddress(host, port);
+		List<MongoCredential> lCred = new ArrayList<MongoCredential>();
+		if (username != null && password != null) {
+			lCred.add(MongoCredential.createCredential(username, dbname, password.toCharArray()));
 		}
-
+		mongo = new MongoClient(lSA, lCred);
+		// test connection
+		mongo.getConnectPoint();
+		// get database
+		db = mongo.getDB(dbname);
 	}
 	
     /**
