@@ -9,6 +9,7 @@ import java.lang.annotation.RetentionPolicy;
  * methods.
  * 
  * @author Andrew Louth
+ * @author Olivier Mourez
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MongoEntity {
@@ -18,5 +19,11 @@ public @interface MongoEntity {
 	 * @return
 	 */
 	String value() default "default";
+
+	/**
+	 * This value represents the indexes.
+	 * @return
+	 */
+	MongoIndex[] indexes() default {};
 
 }

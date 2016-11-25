@@ -185,6 +185,32 @@ String [] indexNames = Car.getIndexes();
 
 p. Due to the schemaless nature of mongo, it is possible to create an index on a field which does not exist because a document containing that field may be inserted in the future. Ensure you spell your field names correctly.
 
+h4. Mongo indexes ddl
+
+p. It is possible to create indexes automatically on start (after mongo connection established) with annotation definition if property **mongo.ddl.index** is set to true in configuratio file
+
+bc.. # mongodb index creation on start
+mongo.ddl.index=true
+
+p. Annotation is the same as the one that enables to define custom collection name, but a new attribute **indexes** has been defined with various options, as shown below:
+
+bc..  
+@MongoEntity(value="mongotestindex", indexes= {
+		@MongoIndex(fields="-number", unique=true),
+		@MongoIndex(fields="text", sparse=true),
+		@MongoIndex(fields="number,-text")
+})
+public class MongoTestIndex extends MongoModel {
+	
+	public int number;
+	public String text;
+	
+	public MongoTestIndex(int pNumber, String pText) {
+		number = pNumber;
+		text = pText;
+	}
+}
+
 h3. Authentication and Security
 
 p. It is possible to run your mongo database in a secure mode, ensuring that a user must authenticate prior to performing operations on secure data. More information on setting up a secure mongo instance can be found on the Mongo website under "Security and Authentication":http://www.mongodb.org/display/DOCS/Security+and+Authentication.

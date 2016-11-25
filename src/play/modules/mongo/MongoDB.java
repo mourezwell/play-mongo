@@ -1,11 +1,13 @@
 package play.modules.mongo;
 
+import java.lang.annotation.Annotation;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +16,8 @@ import org.bson.types.ObjectId;
 
 import play.Logger;
 import play.Play;
+import play.classloading.ApplicationClasses;
+import play.classloading.ApplicationClasses.ApplicationClass;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
@@ -28,15 +32,23 @@ public class MongoDB {
 	/** Default unit name */
 	protected static final String DEFAULT = "mongo";
 
-	/** Default unit name */
-	protected static final String KEY_PREFIX = "mongo_";
-
 	/** Property pattern */
-	private static final Pattern DATABASE_PATTERN = Pattern.compile("(mongo_?(.*))\\.database");
+	private static final Pattern DATABASE_PATTERN = Pattern.compile("(mongo[_\\.]?(.*))\\.database");
 
 	/** Map of mongo persistence units */
 	private static Map<String, MongoDBClient> sClients = new HashMap<String, MongoDBClient>();
 
+	/** Map of indexes found in classes to create on init */
+	private static List<MongoDBIndex> sIndexes = new ArrayList<MongoDBIndex>();
+	
+	/**
+	 * Add index for initialisation
+	 * @param pIdx the index found in annotations
+	 */
+	static void addIndex(MongoDBIndex pIdx) {
+		sIndexes.add(pIdx);
+	}
+	
     /**
      * Obtain a reference to the default mongo database.
      * 
@@ -90,8 +102,84 @@ public class MongoDB {
 				sClients.put(lKey, lClient);
 			}
 		}
+		
+		String lDdl = Play.configuration.getProperty(DEFAULT + ".ddl.index");
+		if (Boolean.parseBoolean(lDdl)) {
+			// add index creation on start
+			Logger.info("Creating indexes found in annotation in mongo");
+			List<MongoDBIndex> indexes = findIndexes();
+			for (MongoDBIndex index : indexes) {
+				try {
+					index.createIndex();
+				}
+				catch (Exception e) {
+					Logger.error(e, "Unabe to create index [" + index.fields + "] on collection [" + index.collectionName +"] of unit [" + index.unitName + "]");
+				}
+			}
+		}
 	}
 	
+	private static List<MongoDBIndex> findIndexes() {
+	
+		List<MongoDBIndex> lRes = new ArrayList<MongoDBIndex>();
+		List<Class> entitiesClasses = Play.classloader.getAnnotatedClasses(MongoEntity.class);
+	
+		for (Class ent : entitiesClasses) {
+			MongoEntity entityAnnotation = (MongoEntity)ent.getAnnotation(MongoEntity.class);
+			if (entityAnnotation == null) {
+				return null;
+			}
+			MongoUnit unitAnnotation = (MongoUnit)ent.getAnnotation(MongoUnit.class);
+			
+	        // Set the default collection name
+	        String collectionName = ent.getName().toLowerCase();
+	        String unitName = MongoDB.DEFAULT;
+	        
+	        if (entityAnnotation.value() != null){
+	        	collectionName = entityAnnotation.value();
+	        }
+	        if (unitAnnotation != null && unitAnnotation.value() != null){
+	        	unitName = unitAnnotation.value();
+	        }
+
+		    if (entityAnnotation.indexes() != null){
+		    	for (MongoIndex idx : entityAnnotation.indexes()) {
+		    		String fields = idx.fields(); 
+		    		boolean unique = idx.unique();
+		    		boolean sparse = idx.sparse();
+		    		lRes.add(new MongoDBIndex(unitName, collectionName, fields, unique, sparse));
+		    	}
+		    }
+		}
+		return lRes;
+	}
+	
+	/**
+	 * Static disposer.
+	 * 
+	 * @throws UnknownHostException in case of bad configuration
+	 * @throws MongoException in case of mongo communication error
+	 */
+	public static void close() throws MongoException, UnknownHostException {
+
+		for (MongoDBClient lClient : sClients.values()) {
+			lClient.close();
+		}
+		sClients.clear();
+	}
+	/**
+	 * Creates an index with options
+	 * 
+	 * @param collectionName
+	 * @param indexString
+	 * @param options
+	 */
+	public static void index(String unitName, String collectionName, String indexString, DBObject options) {
+		DBCollection c = db(unitName).getCollection(collectionName);
+		DBObject indexKeys = createOrderDbObject(indexString);
+		c.createIndex(indexKeys, options);
+	}
+
 	
 	/**
 	 * Creates an index.
@@ -344,7 +432,11 @@ public class MongoDB {
 	 */
 	public static DBObject createOrderDbObject(String query) {
 		
-		String keys = extractKeys(query);
+		String keys = query;
+		// allow field list separated by commas to allow fields starting with uppercase letter but not by "on" or "by" :(  
+		if (query.startsWith("on") || query.startsWith("by")) {
+			keys = extractKeys(query);
+		}
 		
     	DBObject object = new BasicDBObject(); 	
     	String [] keyList = keys.split(",");

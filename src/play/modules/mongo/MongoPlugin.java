@@ -17,6 +17,7 @@ import java.util.Map;
  * 
  * @author Andrew Louth
  * @author Niko Schmuck
+ * @author Olivier Mourez
  */
 public class MongoPlugin extends PlayPlugin {
 	
@@ -34,6 +35,16 @@ public class MongoPlugin extends PlayPlugin {
     	}
     	catch (Exception e) {
     		throw new DatabaseException("Unable to connect Mongo DB", e);
+    	}
+    }
+
+    @Override
+    public void onApplicationStop() {
+    	try {
+    		MongoDB.close();
+    	}
+    	catch (Exception e) {
+    		throw new DatabaseException("Unable to dispose Mongo DB", e);
     	}
     }
 

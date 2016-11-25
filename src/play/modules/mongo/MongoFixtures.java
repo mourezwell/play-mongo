@@ -18,8 +18,8 @@ public class MongoFixtures extends Fixtures {
         }
     }
     
-    public static void delete(Class<? extends MongoModel> ... types) {
-        for (Class<? extends MongoModel> type: types) {
+    public static void delete(Class<? extends Model> ... types) {
+        for (Class<? extends Model> type: types) {
             dropCollection(type);
         }
     }
