@@ -531,6 +531,27 @@ public class MongoDB {
         			lExprQueue.add(new LogicalBlock());
         			lParsedQuery = lParsedQuery.substring(1);
         		}
+            	else if (lParsedQuery.startsWith(")")) { // closing logical block
+            		// requires at least two blocks : current and parent
+            		if (lExprQueue.size() <= 1) {
+    		        	throw new IllegalArgumentException("Missing brackets at " + lParsedQuery + ", in " + queryString);
+            		}
+            		LogicalBlock lClosedBlock = lExprQueue.pollLast();
+            		LogicalBlock lParentBlock = lExprQueue.getLast();
+            		if (lClosedBlock.logic == null) {
+            			if (lClosedBlock.conds.size() == 1) {
+                			lParentBlock.conds.add(lClosedBlock.conds.iterator().next());
+            			}
+            			else {
+        		        	throw new IllegalArgumentException("Missing logic at " + lParsedQuery + ", in " + queryString);
+            			}
+            		}
+            		else {
+            			// encapsulate condidtion and logic in parent
+            			lParentBlock.conds.add(new BasicDBObject(lClosedBlock.logic, lClosedBlock.conds));
+            		}
+    				lParsedQuery = lParsedQuery.substring(1);
+            	}
             	else {
                 	int lFirstSpace = lParsedQuery.indexOf(' ');
             		if (lFirstSpace > 0) {
@@ -827,32 +848,6 @@ public class MongoDB {
 				lLastNegative = false;
     		}
     		// space
-			while (lParsedQuery.startsWith(" ")) {
-				lParsedQuery = lParsedQuery.substring(1);
-			}
-			// closing logical block
-        	if (lParsedQuery.startsWith(")")) {
-        		// requires at least two blocks : current and parent
-        		if (lExprQueue.size() <= 1) {
-		        	throw new IllegalArgumentException("Missing brackets at " + lParsedQuery + ", in " + queryString);
-        		}
-        		LogicalBlock lClosedBlock = lExprQueue.pollLast();
-        		LogicalBlock lParentBlock = lExprQueue.getLast();
-        		if (lClosedBlock.logic == null) {
-        			if (lClosedBlock.conds.size() == 1) {
-            			lParentBlock.conds.add(lClosedBlock.conds.iterator().next());
-        			}
-        			else {
-    		        	throw new IllegalArgumentException("Missing logic at " + lParsedQuery + ", in " + queryString);
-        			}
-        		}
-        		else {
-        			// encapsulate condidtion and logic in parent
-        			lParentBlock.conds.add(new BasicDBObject(lClosedBlock.logic, lClosedBlock.conds));
-        		}
-				lParsedQuery = lParsedQuery.substring(1);
-        	}
-        	// space
 			while (lParsedQuery.startsWith(" ")) {
 				lParsedQuery = lParsedQuery.substring(1);
 			}
